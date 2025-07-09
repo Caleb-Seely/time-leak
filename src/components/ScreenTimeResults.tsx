@@ -1,4 +1,4 @@
-
+import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import type { ScreenTimeData } from "@/types/screentime";
@@ -8,113 +8,129 @@ interface ScreenTimeResultsProps {
   data: ScreenTimeData;
 }
 
-const categoryEmojis = {
-  "Social Media": "📘",
-  "Entertainment": "🎬", 
-  "Productivity": "💼",
-  "Messaging": "💬",
-  "Other": "❓"
-};
-
-const categoryColors = {
-  "Social Media": "bg-pink-500",
-  "Entertainment": "bg-purple-500",
-  "Productivity": "bg-green-500", 
-  "Messaging": "bg-blue-500",
-  "Other": "bg-gray-500"
+const categoryIcons: Record<string, { label: string }> = {
+  "Social Media": { label: "Social Media" },
+  "Entertainment": { label: "Entertainment" },
+  "Productivity": { label: "Productivity" },
+  "Messaging": { label: "Messaging" },
+  "Other": { label: "Other" },
 };
 
 const ScreenTimeResults = ({ data }: ScreenTimeResultsProps) => {
   const totalMinutes = data.totalScreenTime;
-  
-  return (
-    <div className="space-y-6">
-      {/* Header Card */}
-      <Card className="bg-white shadow-lg">
-        <CardHeader className="text-center pb-4">
-          <CardTitle className="text-2xl font-bold text-gray-900">
-            Screen Time Summary
-          </CardTitle>
-          <div className="text-gray-600">
-            <p className="text-lg">{data.date}</p>
-            <p className="text-3xl font-bold text-indigo-600 mt-2">
-              {formatTime(totalMinutes)}
-            </p>
-          </div>
-        </CardHeader>
-      </Card>
+  const categories = Object.entries(data.categoryBreakdown).filter(([, minutes]) => minutes > 0);
 
-      {/* Category Breakdown */}
-      <Card className="bg-white shadow-lg">
-        <CardHeader>
-          <CardTitle className="text-xl font-semibold">Time by Category</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {Object.entries(data.categoryBreakdown).map(([category, minutes]) => {
-            if (minutes === 0) return null;
-            
-            const percentage = totalMinutes > 0 ? (minutes / totalMinutes) * 100 : 0;
-            const emoji = categoryEmojis[category as keyof typeof categoryEmojis];
-            const colorClass = categoryColors[category as keyof typeof categoryColors];
-            
+  // Calculate color based on category time (0-60min = green, 60-120min+ = red)
+  const getCategoryColor = (minutes: number) => {
+    if (minutes <= 60) {
+      // Green zone: interpolate from green to yellow-green
+      const ratio = minutes / 60;
+      const red = Math.round(0 + (255 - 0) * ratio * 0.3);
+      const green = Math.round(255 - (255 - 200) * ratio * 0.2);
+      const blue = Math.round(0);
+      return `rgb(${red}, ${green}, ${blue})`;
+    } else {
+      // Red zone: interpolate from yellow to red
+      const ratio = Math.min((minutes - 60) / 60, 1); // 60 minutes to reach full red at 120 minutes
+      const red = 255; // Keep red at maximum
+      const green = Math.round(200 * (1 - ratio)); // Fade green to 0
+      const blue = Math.round(0); // Keep blue at 0
+      return `rgb(${red}, ${green}, ${blue})`;
+    }
+  };
+
+  // Calculate color based on screen time (0-4.5hrs = green, 4.5-6hrs+ = red)
+  const getScreenTimeColor = (minutes) => {
+      const hours = minutes / 60;
+      
+      if (hours <= 4.5) {
+        // Green zone: interpolate from bright green to yellow-green
+        const ratio = hours / 4.5;
+        const red = Math.round(34 + (255 - 34) * ratio * 0.3);
+        const green = Math.round(197 + (235 - 197) * (1 - ratio * 0.2));
+        const blue = Math.round(94 + (59 - 94) * ratio * 0.5);
+        return `rgb(${red}, ${green}, ${blue})`;
+      } else {
+         // Red zone: interpolate from bright orange to stop sign red
+         const ratio = Math.min((hours - 4.5) / 2, 1); // 2 hours to reach stop sign red at 6.5 hours
+         
+         if (ratio <= 0.375) {
+           // First part: bright orange to red-orange (4.5 to 5.25 hours)
+           const subRatio = ratio / 0.375;
+           const red = 255; // Keep red at maximum
+           const green = Math.round(165 - (165 - 100) * subRatio); // Orange to red-orange
+           const blue = Math.round(0);
+           return `rgb(${red}, ${green}, ${blue})`;
+         } else {
+           // Second part: red-orange to stop sign red (5.25 to 6.5 hours)
+           const subRatio = (ratio - 0.375) / 0.625;
+           const red = 255; // Keep red at maximum for stop sign red
+           const green = Math.round(100 * (1 - subRatio)); // Fade green to 0
+           const blue = Math.round(0); // Keep blue at 0 for stop sign red
+           return `rgb(${red}, ${green}, ${blue})`;
+         }
+      }
+    };
+
+    const summaryColor = getScreenTimeColor(totalMinutes);
+
+
+  return (
+    <div className="space-y-4">
+      {/* Summary Card */}
+      <div className="flex flex-col items-center justify-center ">
+        <div
+          className="rounded-xl shadow-lg flex flex-col items-center justify-center py-4 px-6 mx-auto"
+          style={{ background: summaryColor , minHeight: 120, width: '100%' }}
+        >
+          <div className="text-white text-lg font-bold mb-1" style={{ letterSpacing: -1 }}>
+            Total Screen Time
+          </div>
+          <div className="text-white font-extrabold text-5xl mb-1" style={{ fontSize: 48, letterSpacing: -2, lineHeight: 1 }}>
+            {formatTime(totalMinutes)}
+          </div>
+          <div className="text-white text-base opacity-90">
+            {data.date}
+          </div>
+        </div>
+      </div>
+
+      {/* Category Breakdown - pill shaped, white, minimal */}
+      <div
+        className="w-full rounded-3xl shadow-lg bg-white px-7 py-6"
+        style={{ minHeight: 120 }}
+      >
+        <div className="text-[20px] font-semibold text-gray-800 mb-5">Time by Category</div>
+        <div className="flex flex-col divide-y divide-gray-200">
+          {categories.map(([category, minutes], idx) => {
+            const percentage = (minutes / 1440) * 100; // 1440 minutes = 24 hours
+            const iconColor = getCategoryColor(minutes);
             return (
-              <div key={category} className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">{emoji}</span>
-                    <span className="font-medium">{category}</span>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-semibold">{formatTime(minutes)}</div>
-                    <div className="text-sm text-gray-500">{percentage.toFixed(0)}%</div>
-                  </div>
-                </div>
-                <div className="relative">
-                  <Progress value={percentage} className="h-3" />
-                  <div 
-                    className={`absolute top-0 left-0 h-3 rounded-full ${colorClass}`}
-                    style={{ width: `${percentage}%` }}
+              <div key={category} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
+                <div className="flex items-center gap-3 min-w-0">
+                  <span
+                    aria-label={category}
+                    className="inline-block"
+                    style={{
+                      width: 16,
+                      height: 16,
+                      borderRadius: 4,
+                      background: iconColor,
+                      display: 'inline-block',
+                      marginRight: 8,
+                    }}
                   />
+                  <span className="text-gray-700 text-base truncate" style={{ maxWidth: 120 }}>{category}</span>
+                </div>
+                <div className="flex items-center gap-4">
+                  <span className="text-gray-900 font-bold text-base" style={{ minWidth: 48, textAlign: 'right' }}>{formatTime(minutes)}</span>
+                  {/* <span className="text-gray-400 text-sm" style={{ minWidth: 32, textAlign: 'right' }}>{percentage.toFixed(1)}%</span> */}
                 </div>
               </div>
             );
           })}
-        </CardContent>
-      </Card>
-
-      {/* Top Apps */}
-      <Card className="bg-white shadow-lg">
-        <CardHeader>
-          <CardTitle className="text-xl font-semibold">Most Used Apps</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {data.apps
-              .sort((a, b) => b.timeSpent - a.timeSpent)
-              .slice(0, 5)
-              .map((app, index) => {
-                const percentage = totalMinutes > 0 ? (app.timeSpent / totalMinutes) * 100 : 0;
-                return (
-                  <div key={app.name} className="flex justify-between items-center py-2">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-gray-200 rounded-lg flex items-center justify-center text-sm font-semibold">
-                        {index + 1}
-                      </div>
-                      <div>
-                        <div className="font-medium">{app.name}</div>
-                        <div className="text-sm text-gray-500">{app.category}</div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-semibold">{formatTime(app.timeSpent)}</div>
-                      <div className="text-sm text-gray-500">{percentage.toFixed(0)}%</div>
-                    </div>
-                  </div>
-                );
-              })}
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };

@@ -1,36 +1,97 @@
-
-import { useState } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
-import ScreenTimeResults from "@/components/ScreenTimeResults";
-import { lookupScreenTime } from "@/lib/screentime-api";
-import type { ScreenTimeData } from "@/types/screentime";
+import Search from "lucide-react/dist/esm/icons/search"; // More explicit import for guaranteed tree-shaking
+
+const ScreenTimeResults = lazy(() => import("@/components/ScreenTimeResults"));
 
 const Index = () => {
-  const [phoneNumber, setPhoneNumber] = useState("");
+  const [countryCode, setCountryCode] = useState<string>("1");
+  const [phoneNumber, setPhoneNumber] = useState<string>("");
   const [screenTimeData, setScreenTimeData] = useState<ScreenTimeData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [tagline, setTagline] = useState<string>("Call them out. Log them off.");
+  const [taglineLoading, setTaglineLoading] = useState<boolean>(true);
+
+  // Fetch tagline on mount
+  useEffect(() => {
+    let isMounted = true;
+    // Dynamically import the tagline fetcher to code-split it
+    import("@/lib/screentime-api").then(({ fetchRandomTagline }) => {
+      fetchRandomTagline().then(t => {
+        if (isMounted) {
+          setTagline(t);
+          setTaglineLoading(false);
+        }
+      }).catch(() => {
+        setTaglineLoading(false);
+      });
+    });
+
+    return () => { isMounted = false; };
+  }, []);
+
+  const handlePhoneChange = (value: string) => {
+    // Remove all non-digit characters for formatting
+    const digitsOnly = value.replace(/\D/g, '');
+    
+    // Format the phone number as (XXX) XXX-XXXX
+    let formatted = '';
+    if (digitsOnly.length <= 3) {
+      formatted = digitsOnly;
+    } else if (digitsOnly.length <= 6) {
+      formatted = `(${digitsOnly.slice(0, 3)}) ${digitsOnly.slice(3)}`;
+    } else {
+      formatted = `(${digitsOnly.slice(0, 3)}) ${digitsOnly.slice(3, 6)}-${digitsOnly.slice(6, 10)}`;
+    }
+    
+    setPhoneNumber(formatted);
+    setError(null);
+  };
+
+  const handleCountryCodeChange = (value: string) => {
+    // Remove all non-digit characters
+    const digitsOnly = value.replace(/\D/g, '');
+    setCountryCode(digitsOnly);
+  };
 
   const handleLookup = async () => {
-    if (!phoneNumber.trim()) {
+    if (!phoneNumber || !phoneNumber.trim()) {
       setError("Please enter a phone number");
       return;
     }
 
+    // Dynamically import the heavy phone number library only when needed
+    // We import from 'libphonenumber-js/min' which is better for bundling
+    // and uses a default export.
+    const { default: parsePhoneNumberFromString } = await import("libphonenumber-js/min");
+
+    // Parse and validate phone number using libphonenumber-js
+    const fullPhoneNumber = `+${countryCode}${phoneNumber.replace(/\D/g, '')}`;
+    const phoneObj = parsePhoneNumberFromString(fullPhoneNumber);
+    if (!phoneObj || !phoneObj.isValid()) {
+      setError("Please enter a valid phone number");
+      return;
+    }
+
+    const e164PhoneNumber = phoneObj.number; // E.164 format for lookup
+
+    setScreenTimeData(null);
     setIsLoading(true);
     setError(null);
-    setScreenTimeData(null);
 
     try {
-      const data = await lookupScreenTime(phoneNumber);
+      // Dynamically import the lookup function to code-split Firebase
+      const { lookupScreenTime } = await import("@/lib/screentime-api");
+      const data = await lookupScreenTime(e164PhoneNumber) as ScreenTimeData;
       setScreenTimeData(data);
     } catch (err) {
       console.error("Lookup error:", err);
-      setError("No screen time data found for this phone number. Make sure you've shared your data recently.");
+      setError("No screen time data found for this phone number");
     } finally {
       setIsLoading(false);
     }
@@ -43,76 +104,138 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <div className="max-w-2xl mx-auto">
-        <div className="text-center mb-8 pt-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-3">
-            📱 Screen Time Peek
-          </h1>
-          <p className="text-lg text-gray-600">
-            Check yesterday's phone usage by entering any phone number
-          </p>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-purple-400/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-purple-400/20 to-pink-400/20 rounded-full blur-3xl animate-pulse" style={{animationDelay: '2s'}}></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-blue-300/10 to-purple-300/10 rounded-full blur-3xl animate-pulse" style={{animationDelay: '4s'}}></div>
+      </div>
 
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="phone" className="text-base font-medium">
-                Phone Number
-              </Label>
-              <div className="flex gap-3 mt-2">
-                <Input
-                  id="phone"
-                  type="tel"
-                  placeholder="Enter phone number..."
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  className="text-lg h-12"
-                  disabled={isLoading}
-                />
-                <Button
-                  onClick={handleLookup}
-                  disabled={isLoading}
-                  className="h-12 px-6"
-                >
-                  {isLoading ? "Searching..." : "Look Up"}
-                </Button>
-              </div>
-            </div>
-
-            {error && (
-              <Alert>
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
+      <div className="w-full max-w-md relative z-10">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center mb-4">
+          <img src="/LeekIconNoBG.png" alt="Time Leak Icon" className="w-full h-full object-cover rounded-2xl" />
           </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">TimeLeak</h1>
+          <p className="text-gray-600">{taglineLoading ? "..." : tagline}</p>
         </div>
 
-        {isLoading && (
-          <div className="bg-white rounded-2xl shadow-lg p-8">
+        {/* Main Card */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 overflow-hidden">
+          {/* Input Section */}
+          <div className="p-6 border-b border-gray-100">
             <div className="space-y-4">
-              <Skeleton className="h-8 w-48" />
-              <Skeleton className="h-6 w-32" />
-              <div className="space-y-3">
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-4 w-2/3" />
+              <div>
+                <Label htmlFor="phone" className="text-sm font-medium text-gray-700 mb-2 block">
+                  Phone Number
+                </Label>
+                <div className="flex gap-2 mb-3">
+                  {/* Country Code Input */}
+                  <div className="relative">
+                    <div className="flex items-center bg-gray-50 border border-gray-200 rounded-lg h-12 px-3 min-w-[60px]">
+                      <span className="text-gray-700 font-medium mr-1">+</span>
+                      <Input
+                        type="text"
+                        value={countryCode}
+                        onChange={(e) => handleCountryCodeChange(e.target.value)}
+                        className="border-none bg-transparent p-0 h-auto text-base font-medium text-gray-700 w-12 focus:ring-0 focus:outline-none"
+                        disabled={isLoading}
+                        maxLength={3}
+                        placeholder="1"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Phone Number Input */}
+                  <div className="flex-1">
+                    <Input
+                      type="tel"
+                      value={phoneNumber}
+                      onChange={(e) => handlePhoneChange(e.target.value)}
+                      placeholder="(555) 123-4567"
+                      className="h-12 text-base"
+                      disabled={isLoading}
+                      onKeyDown={handleKeyPress}
+                      id="phone"
+                      name="phone"
+                      required
+                      maxLength={14}
+                    />
+                  </div>
+                </div>
               </div>
+
+              <Button
+                onClick={handleLookup}
+                disabled={isLoading || !phoneNumber}
+                className="w-full h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium"
+              >
+                {isLoading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Searching...
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Search className="w-4 h-4" />
+                    Look Up
+                  </div>
+                )}
+              </Button>
+
+              {error && (
+                <Alert className="border-red-200 bg-red-50">
+                  <AlertDescription className="text-red-700">{error}</AlertDescription>
+                </Alert>
+              )}
             </div>
           </div>
-        )}
 
-        {screenTimeData && !isLoading && (
-          <ScreenTimeResults data={screenTimeData} />
-        )}
+          {/* Results Section */}
+          <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isLoading || screenTimeData ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'}`}>
+            <Suspense fallback={<div className="p-6"><ResultsSkeleton /></div>}>
+              <div className="p-6">
+                {isLoading && <ResultsSkeleton />}
+                {screenTimeData && !isLoading && (
+                  <div className="animate-in fade-in duration-500">
+                    <ScreenTimeResults data={screenTimeData} />
+                  </div>
+                )}
+              </div>
+            </Suspense>
+          </div>
+        </div>
 
-        <div className="text-center mt-12 text-gray-500 text-sm">
-          <p>This tool promotes awareness of digital wellness and screen time habits.</p>
+        {/* Footer */}
+        <div className="text-center mt-6">
+          <p className="text-xs text-gray-500">
+            This tool promotes awareness of digital wellness and screen time habits.
+          </p>
         </div>
       </div>
     </div>
   );
 };
+
+const ResultsSkeleton = () => (
+  <div className="space-y-4 animate-in fade-in duration-300">
+    <div className="flex items-center gap-2 mb-4">
+      <Skeleton className="h-5 w-5 rounded" />
+      <Skeleton className="h-5 w-32" />
+    </div>
+    <div className="grid grid-cols-2 gap-4">
+      <Skeleton className="h-20 rounded-lg" />
+      <Skeleton className="h-20 rounded-lg" />
+    </div>
+    <div className="space-y-2">
+      <Skeleton className="h-4 w-20" />
+      <Skeleton className="h-12 w-full" />
+      <Skeleton className="h-12 w-full" />
+      <Skeleton className="h-12 w-full" />
+    </div>
+  </div>
+);
 
 export default Index;

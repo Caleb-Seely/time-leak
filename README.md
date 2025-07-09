@@ -1,73 +1,35 @@
-# Welcome to your Lovable project
+ # TimeLeak Website
 
-## Project info
+> More life, less likes.
 
-**URL**: https://lovable.dev/projects/341ce3cb-e3b4-47b5-b864-e05934ff6664
+This is the public-facing web component for the **TimeLeak** project. It provides a clean, simple interface for anyone to look up aggregated screen time statistics associated with a phone number.
 
-## How can I edit this code?
+This website allows you to take control of your screen time and reclaim your digital well-being with TimeLeak - the app that helps you live more and scroll less using peer pressure.
 
-There are several ways of editing your application.
+## About The Project
 
-**Use Lovable**
+TimeLeak is an ecosystem designed to promote digital wellness. It consists of two main parts:
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/341ce3cb-e3b4-47b5-b864-e05934ff6664) and start prompting.
+1.  **The TimeLeak Android App**: A background service that automatically and securely tracks user screen time and app usage, syncing the data daily to Firebase.
+2.  **The TimeLeak Website (This Repository)**: A web application that allows users and their friends to view high-level, non-sensitive screen time data. This is intended to be a fun way to encourage awareness and accountability for digital habits.
 
-Changes made via Lovable will be committed automatically to this repo.
+This website fetches data from Firebase Firestore, displaying results in a user-friendly format while respecting user privacy by only showing aggregated statistics.
 
-**Use your preferred IDE**
+## Features
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+-   **Phone Number Lookup**: Easily search for screen time data using a phone number.
+-   **Data Visualization**: Displays key metrics like total screen time, time spent on social media, and more.
+-   **Dynamic Content**: Features a rotating tagline fetched from a live database.
+-   **Secure & Private**: Built with security in mind, ensuring that detailed, sensitive app usage data remains private to the user.
+-   **Modern & Responsive**: A clean, beautiful interface that works on any device.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## Tech Stack
 
-Follow these steps:
+This project is built with a modern web stack:
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/341ce3cb-e3b4-47b5-b864-e05934ff6664) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+-   **Framework**: [React](https://reactjs.org/)
+-   **Build Tool**: [Vite](https://vitejs.dev/)
+-   **Language**: [TypeScript](https://www.typescriptlang.org/)
+-   **Styling**: [Tailwind CSS](https://tailwindcss.com/)
+-   **UI Components**: [shadcn/ui](https://ui.shadcn.com/)
+-   **Backend**: [Firebase Firestore](https://firebase.google.com/docs/firestore)

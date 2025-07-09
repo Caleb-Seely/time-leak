@@ -1,75 +1,120 @@
+import type { ScreenTimeData, AppUsage } from "@/types/screentime";
+import { formatDate, isValidPhoneNumber } from "./time-utils";
+import { db } from "./firebase";
+import { collection, query, where, getDocs, getCountFromServer, doc, getDoc } from "firebase/firestore";
 
-import type { ScreenTimeData } from "@/types/screentime";
-import { formatDate } from "./time-utils";
+// Helper to convert Firestore Timestamp, JS Date, or string to a display string
+function getDateString(date: any): string {
+  if (!date) return "";
+  if (typeof date === "object" && "seconds" in date) {
+    // Firestore Timestamp
+    return new Date(date.seconds * 1000).toLocaleDateString();
+  }
+  if (typeof date === "string") return date;
+  if (date instanceof Date) return date.toLocaleDateString();
+  return String(date);
+}
 
-// Mock data for demonstration - replace with actual Firestore integration
-const mockScreenTimeData: Record<string, ScreenTimeData> = {
-  "+1234567890": {
-    phoneNumber: "+1234567890",
-    date: formatDate(new Date(Date.now() - 24 * 60 * 60 * 1000)), // Yesterday
-    totalScreenTime: 277, // 4h 37m
-    apps: [
-      { name: "Instagram", timeSpent: 85, category: "Social Media" },
-      { name: "YouTube", timeSpent: 65, category: "Entertainment" },
-      { name: "TikTok", timeSpent: 45, category: "Social Media" },
-      { name: "WhatsApp", timeSpent: 32, category: "Messaging" },
-      { name: "Gmail", timeSpent: 25, category: "Productivity" },
-      { name: "Spotify", timeSpent: 15, category: "Entertainment" },
-      { name: "Calendar", timeSpent: 10, category: "Productivity" },
-    ],
-    categoryBreakdown: {
-      "Social Media": 130,
-      "Entertainment": 80,
-      "Productivity": 35,
-      "Messaging": 32,
-      "Other": 0,
-    },
-  },
-  "5551234567": {
-    phoneNumber: "5551234567",
-    date: formatDate(new Date(Date.now() - 24 * 60 * 60 * 1000)),
-    totalScreenTime: 195, // 3h 15m
-    apps: [
-      { name: "Netflix", timeSpent: 90, category: "Entertainment" },
-      { name: "Messages", timeSpent: 45, category: "Messaging" },
-      { name: "Safari", timeSpent: 30, category: "Other" },
-      { name: "Docs", timeSpent: 20, category: "Productivity" },
-      { name: "Snapchat", timeSpent: 10, category: "Social Media" },
-    ],
-    categoryBreakdown: {
-      "Social Media": 10,
-      "Entertainment": 90,
-      "Productivity": 20,
-      "Messaging": 45,
-      "Other": 30,
-    },
-  },
-};
+// Transform backend UsageData to frontend ScreenTimeData
+function transformUsageData(data: any): ScreenTimeData {
+  // Convert ms to minutes
+  const msToMin = (ms: number) => Math.round(ms / 60000);
+
+  // Map appUsage to apps array
+  const apps: AppUsage[] = data.appUsage
+    ? Object.entries(data.appUsage).map(([pkg, ms]) => ({
+        name: pkg, // You may want to map package names to friendly names
+        timeSpent: msToMin(ms as number),
+        category: "Other", // You can improve this if you have category info
+      }))
+    : [];
+
+  // Build category breakdown
+  const categoryBreakdown = {
+    "Social Media": msToMin(data.socialMediaTime || 0),
+    "Entertainment": msToMin(data.entertainmentTime || 0),
+    "Productivity": 0,
+    "Messaging": 0,
+    "Other": msToMin((data.totalScreenTime || 0)) -
+      msToMin(data.socialMediaTime || 0) -
+      msToMin(data.entertainmentTime || 0),
+  };
+
+  return {
+    phoneNumber: data.phoneNumber,
+    date: getDateString(data.date),
+    totalScreenTime: msToMin(data.totalScreenTime || 0),
+    apps,
+    categoryBreakdown,
+  };
+}
 
 export const lookupScreenTime = async (phoneNumber: string): Promise<ScreenTimeData> => {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
   console.log("Looking up screen time for:", phoneNumber);
-  
-  // Clean phone number (remove spaces, dashes, etc.)
-  const cleanNumber = phoneNumber.replace(/\D/g, "");
-  
-  // Try different formats
-  const possibleNumbers = [
-    phoneNumber,
-    cleanNumber,
-    `+1${cleanNumber}`,
-    `+${cleanNumber}`,
-  ];
-  
-  for (const number of possibleNumbers) {
-    if (mockScreenTimeData[number]) {
-      console.log("Found data for:", number);
-      return mockScreenTimeData[number];
-    }
+
+  // Validate phone number before querying
+  if (!isValidPhoneNumber(phoneNumber)) {
+    throw new Error("Invalid phone number format.");
   }
-  
-  console.log("No data found for phone number:", phoneNumber);
-  throw new Error("No screen time data found");
+
+  // Check if Firebase is properly configured
+  if (!db) {
+    console.error("Firebase database is not initialized");
+    throw new Error("Database connection not available. Please check Firebase configuration.");
+  }
+
+  try {
+    // Query Firestore for the exact phone number
+    const screenTimeRef = collection(db, "usage_data");
+    const q = query(
+      screenTimeRef,
+      where("phoneNumber", "==", phoneNumber)
+    );
+    const querySnapshot = await getDocs(q);
+    if (!querySnapshot.empty) {
+      const doc = querySnapshot.docs[0];
+      const data = doc.data();
+      console.log("Found data for:", phoneNumber);
+      // Transform backend data to frontend format
+      return transformUsageData(data);
+    }
+    console.log("No data found for phone number:", phoneNumber);
+    throw new Error("No screen time data found for this phone number. Make sure you've shared your data recently.");
+  } catch (error) {
+    console.error("Firebase lookup error:", error);
+    throw error;
+  }
+};
+
+/**
+ * Fetches a random tagline from the 'subtitle' collection in Firestore.
+ * Each document should have a 'tag_line' field.
+ * Returns the tagline string, or a fallback if none found.
+ */
+export const fetchRandomTagline = async (): Promise<string> => {
+  if (!db) {
+    console.error("Firebase database is not initialized");
+    return "Call them out. Log them off.";
+  }
+  try {
+    const subtitleRef = collection(db, "subtitles");
+    // Get all taglines (could be optimized for large collections)
+    const snapshot = await getDocs(subtitleRef);
+    const taglines: string[] = [];
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      if (data && typeof data.tag_line === 'string') {
+        taglines.push(data.tag_line);
+      }
+    });
+    if (taglines.length === 0) {
+      return "Call them out. Log them off.";
+    }
+    // Pick one at random
+    const randomIndex = Math.floor(Math.random() * taglines.length);
+    return taglines[randomIndex];
+  } catch (error) {
+    console.error("Error fetching taglines:", error);
+    return "Call them out. Log them off.";
+  }
 };
