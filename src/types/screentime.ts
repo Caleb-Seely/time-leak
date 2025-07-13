@@ -13,6 +13,7 @@ export interface UsageData {
   appUsage: Record<string, number>; // packageName -> usageTimeMillis
   socialMediaTime: number; // in milliseconds
   entertainmentTime: number; // in milliseconds
+  goalTime?: number; // in minutes, optional for backward compatibility
 }
 
 // Frontend data structure (processed for display)
@@ -20,6 +21,7 @@ export interface ScreenTimeData {
   phoneNumber: string;
   date: string;
   totalScreenTime: number; // in minutes
+  goalTime?: number; // in minutes, optional for backward compatibility
   apps: AppUsage[];
   categoryBreakdown: {
     "Social Media": number;

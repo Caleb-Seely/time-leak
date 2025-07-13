@@ -18,6 +18,7 @@ const categoryIcons: Record<string, { label: string }> = {
 
 const ScreenTimeResults = ({ data }: ScreenTimeResultsProps) => {
   const totalMinutes = data.totalScreenTime;
+  const goalMinutes = data.goalTime || 270; // Default to 4.5 hours (270 minutes) if no goal set
   const categories = Object.entries(data.categoryBreakdown).filter(([, minutes]) => minutes > 0);
 
   // Calculate color based on category time (0-60min = green, 60-120min+ = red)
@@ -39,40 +40,43 @@ const ScreenTimeResults = ({ data }: ScreenTimeResultsProps) => {
     }
   };
 
-  // Calculate color based on screen time (0-4.5hrs = green, 4.5-6hrs+ = red)
-  const getScreenTimeColor = (minutes) => {
-      const hours = minutes / 60;
+  // Calculate color based on screen time relative to goal time
+  const getScreenTimeColor = (minutes: number) => {
+    const hours = minutes / 60;
+    const goalHours = goalMinutes / 60;
+    
+    if (minutes <= goalMinutes) {
+      // Green zone: interpolate from bright green to yellow-green as you approach goal
+      const ratio = minutes / goalMinutes;
+      const red = Math.round(34 + (255 - 34) * ratio * 0.3);
+      const green = Math.round(197 + (235 - 197) * (1 - ratio * 0.2));
+      const blue = Math.round(94 + (59 - 94) * ratio * 0.5);
+      return `rgb(${red}, ${green}, ${blue})`;
+    } else {
+      // Red zone: interpolate from bright orange to stop sign red as you exceed goal
+      const excessMinutes = minutes - goalMinutes;
+      const maxExcess = goalMinutes * 0.5; // 50% over goal to reach full red
+      const ratio = Math.min(excessMinutes / maxExcess, 1);
       
-      if (hours <= 4.5) {
-        // Green zone: interpolate from bright green to yellow-green
-        const ratio = hours / 4.5;
-        const red = Math.round(34 + (255 - 34) * ratio * 0.3);
-        const green = Math.round(197 + (235 - 197) * (1 - ratio * 0.2));
-        const blue = Math.round(94 + (59 - 94) * ratio * 0.5);
+      if (ratio <= 0.375) {
+        // First part: bright orange to red-orange
+        const subRatio = ratio / 0.375;
+        const red = 255; // Keep red at maximum
+        const green = Math.round(165 - (165 - 100) * subRatio); // Orange to red-orange
+        const blue = Math.round(0);
         return `rgb(${red}, ${green}, ${blue})`;
       } else {
-         // Red zone: interpolate from bright orange to stop sign red
-         const ratio = Math.min((hours - 4.5) / 2, 1); // 2 hours to reach stop sign red at 6.5 hours
-         
-         if (ratio <= 0.375) {
-           // First part: bright orange to red-orange (4.5 to 5.25 hours)
-           const subRatio = ratio / 0.375;
-           const red = 255; // Keep red at maximum
-           const green = Math.round(165 - (165 - 100) * subRatio); // Orange to red-orange
-           const blue = Math.round(0);
-           return `rgb(${red}, ${green}, ${blue})`;
-         } else {
-           // Second part: red-orange to stop sign red (5.25 to 6.5 hours)
-           const subRatio = (ratio - 0.375) / 0.625;
-           const red = 255; // Keep red at maximum for stop sign red
-           const green = Math.round(100 * (1 - subRatio)); // Fade green to 0
-           const blue = Math.round(0); // Keep blue at 0 for stop sign red
-           return `rgb(${red}, ${green}, ${blue})`;
-         }
+        // Second part: red-orange to stop sign red
+        const subRatio = (ratio - 0.375) / 0.625;
+        const red = 255; // Keep red at maximum for stop sign red
+        const green = Math.round(100 * (1 - subRatio)); // Fade green to 0
+        const blue = Math.round(0); // Keep blue at 0 for stop sign red
+        return `rgb(${red}, ${green}, ${blue})`;
       }
-    };
+    }
+  };
 
-    const summaryColor = getScreenTimeColor(totalMinutes);
+  const summaryColor = getScreenTimeColor(totalMinutes);
 
 
   return (
@@ -89,9 +93,12 @@ const ScreenTimeResults = ({ data }: ScreenTimeResultsProps) => {
           <div className="text-white font-extrabold text-5xl mb-1" style={{ fontSize: 48, letterSpacing: -2, lineHeight: 1 }}>
             {formatTime(totalMinutes)}
           </div>
-          <div className="text-white text-base opacity-90">
+          <div className="text-white text-base opacity-90 mb-1">
             {data.date}
           </div>
+          {/* <div className="text-white text-sm opacity-75">
+            Goal: {formatTime(goalMinutes)}
+          </div> */}
         </div>
       </div>
 

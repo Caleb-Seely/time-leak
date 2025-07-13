@@ -40,10 +40,18 @@ function transformUsageData(data: any): ScreenTimeData {
       msToMin(data.entertainmentTime || 0),
   };
 
+  // Handle goalTime - it could be stored in minutes or milliseconds
+  let goalTime: number | undefined;
+  if (data.goalTime !== undefined) {
+    // If goalTime is greater than 1440 (24 hours in minutes), assume it's in milliseconds
+    goalTime = data.goalTime > 1440 ? msToMin(data.goalTime) : data.goalTime;
+  }
+
   return {
     phoneNumber: data.phoneNumber,
     date: getDateString(data.date),
     totalScreenTime: msToMin(data.totalScreenTime || 0),
+    goalTime,
     apps,
     categoryBreakdown,
   };
