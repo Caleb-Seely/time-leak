@@ -22,6 +22,7 @@ This website fetches data from Firebase Firestore, displaying results in a user-
 -   **Dynamic Content**: Features a rotating tagline fetched from a live database.
 -   **Secure & Private**: Built with security in mind, ensuring that detailed, sensitive app usage data remains private to the user.
 -   **Modern & Responsive**: A clean, beautiful interface that works on any device.
+-   **Analytics**: Google Analytics integration with lazy loading for optimal performance.
 
 ## Tech Stack
 
@@ -33,3 +34,20 @@ This project is built with a modern web stack:
 -   **Styling**: [Tailwind CSS](https://tailwindcss.com/)
 -   **UI Components**: [shadcn/ui](https://ui.shadcn.com/)
 -   **Backend**: [Firebase Firestore](https://firebase.google.com/docs/firestore)
+-   **Analytics**: [Google Analytics 4](https://analytics.google.com/)
+
+## Configuration
+
+### Google Analytics Setup
+
+To enable Google Analytics tracking:
+
+1. Create a Google Analytics 4 property in your Google Analytics account
+2. Get your Measurement ID (starts with `G-`)
+3. Create a `.env` file in the root directory with:
+   ```
+   VITE_GA_TRACKING_ID=G-XXXXXXXXXX
+   ```
+   Replace `G-XXXXXXXXXX` with your actual Measurement ID
+
+The analytics implementation uses lazy loading to prevent it from affecting initial page load performance. Google Analytics will only load after the main content has been rendered.

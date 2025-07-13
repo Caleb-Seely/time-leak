@@ -5,6 +5,8 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import Search from "lucide-react/dist/esm/icons/search"; // More explicit import for guaranteed tree-shaking
+import { useAnalytics } from "@/hooks/use-analytics";
+import { ScreenTimeData } from "@/types/screentime";
 
 const ScreenTimeResults = lazy(() => import("@/components/ScreenTimeResults"));
 
@@ -16,6 +18,9 @@ const Index = () => {
   const [error, setError] = useState<string | null>(null);
   const [tagline, setTagline] = useState<string>("Call them out. Log them off.");
   const [taglineLoading, setTaglineLoading] = useState<boolean>(true);
+
+  // Initialize analytics
+  const { trackEvent, trackScreenTime } = useAnalytics();
 
   // Fetch tagline on mount
   useEffect(() => {
@@ -62,6 +67,7 @@ const Index = () => {
   const handleLookup = async () => {
     if (!phoneNumber || !phoneNumber.trim()) {
       setError("Please enter a phone number");
+      trackEvent("validation_error", "phone_lookup", "empty_phone_number");
       return;
     }
 
@@ -75,10 +81,14 @@ const Index = () => {
     const phoneObj = parsePhoneNumberFromString(fullPhoneNumber);
     if (!phoneObj || !phoneObj.isValid()) {
       setError("Please enter a valid phone number");
+      trackEvent("validation_error", "phone_lookup", "invalid_phone_number");
       return;
     }
 
     const e164PhoneNumber = phoneObj.number; // E.164 format for lookup
+
+    // Track successful lookup attempt
+    trackEvent("lookup_attempt", "phone_lookup", "screen_time_search");
 
     setScreenTimeData(null);
     setIsLoading(true);
@@ -89,9 +99,19 @@ const Index = () => {
       const { lookupScreenTime } = await import("@/lib/screentime-api");
       const data = await lookupScreenTime(e164PhoneNumber) as ScreenTimeData;
       setScreenTimeData(data);
+      
+      // Track successful lookup
+      trackScreenTime("lookup_success", {
+        phone_number: e164PhoneNumber,
+        total_screen_time: data.totalScreenTime,
+        has_social_media: data.categoryBreakdown["Social Media"] > 0
+      });
     } catch (err) {
       console.error("Lookup error:", err);
       setError("No screen time data found for this phone number");
+      
+      // Track failed lookup
+      trackEvent("lookup_failed", "phone_lookup", "no_data_found");
     } finally {
       setIsLoading(false);
     }
@@ -104,7 +124,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex items-center justify-center p-4 relative overflow-hidden">
+   <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex items-start justify-center p-4 relative overflow-hidden">
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-purple-400/20 rounded-full blur-3xl animate-pulse"></div>
