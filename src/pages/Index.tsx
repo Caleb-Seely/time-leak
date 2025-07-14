@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent } from "@/components/ui/card";
 import Search from "lucide-react/dist/esm/icons/search"; // More explicit import for guaranteed tree-shaking
 import { useAnalytics } from "@/hooks/use-analytics";
 import { ScreenTimeData } from "@/types/screentime";
@@ -229,10 +230,58 @@ const Index = () => {
         </div>
 
         {/* Footer */}
-        <div className="text-center mt-6">
+        <div className="text-center mt-6 space-y-4">
           <p className="text-xs text-gray-500">
             This tool promotes awareness of digital wellness and screen time habits.
           </p>
+          
+          {/* About Link Card */}
+          <Card className="bg-white/80 backdrop-blur-sm border-white/20 hover:shadow-lg transition-all duration-300 cursor-pointer group" onClick={() => {
+            trackEvent("navigation", "index_page", "about_page_link");
+            window.location.href = "/about";
+          }}>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="text-left">
+                  <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+                    Learn More About TimeLeak
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Discover how this tool works and how you can use it
+                  </p>
+                </div>
+                <div className="text-blue-600 group-hover:text-blue-700 transition-colors">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Digital Wellness Link Card */}
+          <Card className="bg-white/80 backdrop-blur-sm border-white/20 hover:shadow-lg transition-all duration-300 cursor-pointer group" onClick={() => {
+            trackEvent("navigation", "index_page", "digital_wellness_page_link");
+            window.location.href = "/digital-wellness";
+          }}>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="text-left">
+                  <h3 className="font-semibold text-gray-900 group-hover:text-green-600 transition-colors">
+                    Digital Wellness Guide
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Learn about the impact of technology on your wellbeing
+                  </p>
+                </div>
+                <div className="text-green-600 group-hover:text-green-700 transition-colors">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
