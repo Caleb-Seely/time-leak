@@ -284,6 +284,28 @@ const Index = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Early Access Link Card */}
+          <Card className="bg-white/80 backdrop-blur-sm border-white/20 hover:shadow-lg transition-all duration-300 cursor-pointer group" onClick={() => {
+            trackEvent("navigation", "index_page", "early_access_link");
+            window.open("https://forms.gle/64HCMMKyx6WJyXgQ8", "_blank");
+          }}>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="text-left">
+                  <h3 className="font-semibold text-gray-900 group-hover:text-purple-600 transition-colors">
+                    Get Early Access
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Sign up to be one of the first to use the Android app.
+                  </p>
+                </div>
+                <div className="text-purple-600 group-hover:text-purple-700 transition-colors">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
