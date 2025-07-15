@@ -1,4 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,6 +20,7 @@ const Index = () => {
   const [error, setError] = useState<string | null>(null);
   const [tagline, setTagline] = useState<string>("Call them out. Log them off.");
   const [taglineLoading, setTaglineLoading] = useState<boolean>(true);
+  const navigate = useNavigate();
 
   // Initialize analytics
   const { trackEvent, trackScreenTime } = useAnalytics();
@@ -238,7 +240,7 @@ const Index = () => {
           {/* About Link Card */}
           <Card className="bg-white/80 backdrop-blur-sm border-white/20 hover:shadow-lg transition-all duration-300 cursor-pointer group" onClick={() => {
             trackEvent("navigation", "index_page", "about_page_link");
-            window.location.href = "/about";
+            navigate("/about");
           }}>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -262,7 +264,7 @@ const Index = () => {
           {/* Digital Wellness Link Card */}
           <Card className="bg-white/80 backdrop-blur-sm border-white/20 hover:shadow-lg transition-all duration-300 cursor-pointer group" onClick={() => {
             trackEvent("navigation", "index_page", "digital_wellness_page_link");
-            window.location.href = "/digital-wellness";
+            navigate("/digital-wellness");
           }}>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
