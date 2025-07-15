@@ -5,13 +5,21 @@ import { collection, query, where, getDocs, getCountFromServer, doc, getDoc } fr
 
 // Helper to convert Firestore Timestamp, JS Date, or string to a display string
 function getDateString(date: any): string {
+  const options: Intl.DateTimeFormatOptions = {
+    month: 'numeric',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    second: '2-digit',
+  };
+
   if (!date) return "";
   if (typeof date === "object" && "seconds" in date) {
     // Firestore Timestamp
-    return new Date(date.seconds * 1000).toLocaleDateString();
+    return new Date(date.seconds * 1000).toLocaleString(undefined, options);
   }
   if (typeof date === "string") return date;
-  if (date instanceof Date) return date.toLocaleDateString();
+  if (date instanceof Date) return date.toLocaleString(undefined, options);
   return String(date);
 }
 

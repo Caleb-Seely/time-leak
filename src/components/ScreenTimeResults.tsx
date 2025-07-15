@@ -88,13 +88,13 @@ const ScreenTimeResults = ({ data }: ScreenTimeResultsProps) => {
           style={{ background: summaryColor , minHeight: 120, width: '100%' }}
         >
           <div className="text-white text-lg font-bold mb-1" style={{ letterSpacing: -1 }}>
-            Total Screen Time
+            Last 24hr
           </div>
           <div className="text-white font-extrabold text-5xl mb-1" style={{ fontSize: 48, letterSpacing: -2, lineHeight: 1 }}>
             {formatTime(totalMinutes)}
           </div>
           <div className="text-white text-base opacity-90 mb-1">
-            {data.date}
+            Synced: {data.date}
           </div>
           {/* <div className="text-white text-sm opacity-75">
             Goal: {formatTime(goalMinutes)}
