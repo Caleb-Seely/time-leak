@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
-import Search from "lucide-react/dist/esm/icons/search"; // More explicit import for guaranteed tree-shaking
+import Search from "lucide-react/dist/esm/icons/search";
+import { ChevronUp, ChevronDown } from "lucide-react";
 import { useAnalytics } from "@/hooks/use-analytics";
 import { ScreenTimeData } from "@/types/screentime";
 
@@ -20,6 +21,8 @@ const Index = () => {
   const [error, setError] = useState<string | null>(null);
   const [tagline, setTagline] = useState<string>("Call them out. Log them off.");
   const [taglineLoading, setTaglineLoading] = useState<boolean>(true);
+  const [isInputCollapsed, setIsInputCollapsed] = useState(false);
+  const [hasFoundData, setHasFoundData] = useState(false); // Track if we've successfully found data
   const navigate = useNavigate();
 
   // Initialize analytics
@@ -109,6 +112,10 @@ const Index = () => {
         total_screen_time: data.totalScreenTime,
         has_social_media: data.categoryBreakdown["Social Media"] > 0
       });
+      
+      // Only set these states if we successfully found data
+      setHasFoundData(true);
+      setIsInputCollapsed(true);
     } catch (err) {
       console.error("Lookup error:", err);
       setError("No screen time data found for this phone number");
@@ -126,6 +133,24 @@ const Index = () => {
     }
   };
 
+  // Toggle collapse function
+  const toggleInputCollapse = () => {
+    setIsInputCollapsed(!isInputCollapsed);
+    trackEvent("ui_interaction", "phone_input", isInputCollapsed ? "expand" : "collapse");
+  };
+
+  // Reset to home state function
+  const resetToHome = () => {
+    setCountryCode("1");
+    setPhoneNumber("");
+    setScreenTimeData(null);
+    setIsLoading(false);
+    setError(null);
+    setIsInputCollapsed(false);
+    setHasFoundData(false);
+    trackEvent("ui_interaction", "home_icon", "reset_to_home");
+  };
+
   return (
    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex items-start justify-center p-4 relative overflow-hidden">
       {/* Animated background elements */}
@@ -137,82 +162,109 @@ const Index = () => {
 
       <div className="w-full max-w-md relative z-10">
         {/* Header */}
-        <div className="text-center mb-8">
-          <div className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center mb-4">
-          <img src="/LeekIconNoBG.png" alt="Time Leak Icon" className="w-full h-full object-cover rounded-2xl" />
+        <div className="text-center mb-2">
+          <div 
+            className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center mb-2 cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
+            onClick={resetToHome}
+          >
+            <img src="/LeekIconNoBG.png" alt="Time Leak Icon" className="w-full h-full object-cover rounded-2xl" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">TimeLeak</h1>
+          <h1 className="text-2xl font-bold text-gray-900">TimeLeak</h1>
           <p className="text-gray-600">{taglineLoading ? "..." : tagline}</p>
         </div>
 
         {/* Main Card */}
         <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 overflow-hidden">
-          {/* Input Section */}
-          <div className="p-6 border-b border-gray-100">
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="phone" className="text-sm font-medium text-gray-700 mb-2 block">
+          {/* Toggle button - Only show after successful data lookup */}
+          {hasFoundData && (
+            <div className="px-6 pt-4 pb-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="phone" className="text-sm font-medium text-gray-700">
                   Phone Number
                 </Label>
-                <div className="flex gap-2 mb-3">
-                  {/* Country Code Input */}
-                  <div className="relative">
-                    <div className="flex items-center bg-gray-50 border border-gray-200 rounded-lg h-12 px-3 min-w-[60px]">
-                      <span className="text-gray-700 font-medium mr-1">+</span>
+                <button
+                  onClick={toggleInputCollapse}
+                  className="p-1 rounded hover:bg-gray-100 transition-colors"
+                  type="button"
+                >
+                  <Search className="w-4 h-4 text-gray-400 hover:text-gray-600 transition-colors" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Input Section - Always visible until first lookup, then collapsible */}
+          <div className={`transition-all duration-300 ease-in-out overflow-hidden ${
+            hasFoundData && isInputCollapsed ? 'max-h-0 opacity-0' : 'max-h-96 opacity-100'
+          }`}>
+            <div className={`${hasFoundData ? 'px-6 pb-6' : 'p-6'} ${hasFoundData ? 'border-b border-gray-100' : ''}`}>
+              <div className="space-y-4">
+                <div>
+                  {!hasFoundData && (
+                    <Label htmlFor="phone" className="text-sm font-medium text-gray-700 mb-2 block">
+                      Phone Number
+                    </Label>
+                  )}
+                  <div className="flex gap-2 mb-3">
+                    {/* Country Code Input */}
+                    <div className="relative">
+                      <div className="flex items-center bg-gray-50 border border-gray-200 rounded-lg h-12 px-3 min-w-[60px]">
+                        <span className="text-gray-700 font-medium mr-1">+</span>
+                        <Input
+                          type="text"
+                          value={countryCode}
+                          onChange={(e) => handleCountryCodeChange(e.target.value)}
+                          className="border-none bg-transparent p-0 h-auto text-base font-medium text-gray-700 w-12 focus:ring-0 focus:outline-none"
+                          disabled={isLoading}
+                          maxLength={3}
+                          placeholder="1"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Phone Number Input */}
+                    <div className="flex-1">
                       <Input
-                        type="text"
-                        value={countryCode}
-                        onChange={(e) => handleCountryCodeChange(e.target.value)}
-                        className="border-none bg-transparent p-0 h-auto text-base font-medium text-gray-700 w-12 focus:ring-0 focus:outline-none"
+                        type="tel"
+                        value={phoneNumber}
+                        onChange={(e) => handlePhoneChange(e.target.value)}
+                        placeholder="(555) 123-4567"
+                        className="h-12 text-base"
                         disabled={isLoading}
-                        maxLength={3}
-                        placeholder="1"
+                        onKeyDown={handleKeyPress}
+                        id="phone"
+                        name="phone"
+                        required
+                        maxLength={14}
                       />
                     </div>
                   </div>
-
-                  {/* Phone Number Input */}
-                  <div className="flex-1">
-                    <Input
-                      type="tel"
-                      value={phoneNumber}
-                      onChange={(e) => handlePhoneChange(e.target.value)}
-                      placeholder="(555) 123-4567"
-                      className="h-12 text-base"
-                      disabled={isLoading}
-                      onKeyDown={handleKeyPress}
-                      id="phone"
-                      name="phone"
-                      required
-                      maxLength={14}
-                    />
-                  </div>
                 </div>
-              </div>
 
-              <Button
-                onClick={handleLookup}
-                disabled={isLoading || !phoneNumber}
-                className="w-full h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium"
-              >
-                {isLoading ? (
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Searching...
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <Search className="w-4 h-4" />
-                    Look Up
-                  </div>
+                <Button
+                  onClick={handleLookup}
+                  disabled={isLoading || !phoneNumber}
+                  className="w-full h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium"
+                >
+                  {isLoading ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Searching...
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Search className="w-4 h-4" />
+                      Look Up
+                    </div>
+                  )}
+                </Button>
+
+                {error && (
+                  <Alert className="border-red-200 bg-red-50">
+                    <AlertDescription className="text-red-700">{error}</AlertDescription>
+                  </Alert>
                 )}
-              </Button>
-
-              {error && (
-                <Alert className="border-red-200 bg-red-50">
-                  <AlertDescription className="text-red-700">{error}</AlertDescription>
-                </Alert>
-              )}
+              </div>
             </div>
           </div>
 
@@ -232,9 +284,9 @@ const Index = () => {
         </div>
 
         {/* Footer */}
-        <div className="text-center mt-6 space-y-4">
+        <div className="text-center mt-4 space-y-4">
           <p className="text-xs text-gray-500">
-            This tool promotes awareness of digital wellness and screen time habits.
+            This tool promotes healthy digital habits.
           </p>
           
           {/* About Link Card */}
