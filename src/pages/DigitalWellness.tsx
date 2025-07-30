@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +10,7 @@ const DigitalWellness = () => {
   const [expandedSections, setExpandedSections] = useState({});
   const [tagline, setTagline] = useState<string>("Call them out. Log them off.");
   const [taglineLoading, setTaglineLoading] = useState<boolean>(true);
+  const navigate = useNavigate();
 
     // Fetch tagline on mount
     useEffect(() => {
@@ -29,6 +31,10 @@ const DigitalWellness = () => {
 
   const handleBackClick = () => {
     window.history.back();
+  };
+
+  const handleIconClick = () => {
+    navigate("/");
   };
 
   const handleExternalLink = (url: string, topic: string) => {
@@ -237,7 +243,7 @@ const DigitalWellness = () => {
 
       <div className="w-full max-w-4xl relative z-10">
         {/* Header */}
-        <div className="text-center mb-6">
+        <div className="text-center mb-2">
           <Button
             onClick={handleBackClick}
             variant="ghost"
@@ -247,11 +253,14 @@ const DigitalWellness = () => {
             Back
           </Button>
           
-          <div className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center mb-4">
+          <div 
+            className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center mb-2 mt-2 cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
+            onClick={handleIconClick}
+          >
             <img src="/LeekIconNoBG.png" alt="Time Leak Icon" className="w-full h-full object-cover rounded-2xl" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">TimeLeak</h1>
-          <p className="text-gray-600 text-lg">{taglineLoading ? "..." : tagline}</p>
+          <h1 className="text-2xl font-bold text-gray-900">TimeLeak</h1>
+          <p className="text-gray-600">{taglineLoading ? "..." : tagline}</p>
         </div>
 
         {/* Wellness Topics - Grid Layout */}

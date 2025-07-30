@@ -84,7 +84,7 @@ const ScreenTimeResults = ({ data }: ScreenTimeResultsProps) => {
       {/* Summary Card */}
       <div className="flex flex-col items-center justify-center ">
         <div
-          className="rounded-xl shadow-lg flex flex-col items-center justify-center py-4 px-6 mx-auto"
+          className="rounded-xl shadow-lg flex flex-col items-center justify-center py-2 px-6 mx-auto"
           style={{ background: summaryColor , minHeight: 120, width: '100%' }}
         >
           <div className="text-white text-lg font-bold mb-1" style={{ letterSpacing: -1 }}>

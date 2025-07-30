@@ -164,7 +164,7 @@ const Index = () => {
         {/* Header */}
         <div className="text-center mb-2">
           <div 
-            className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center mb-2 cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
+            className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center mb-2 mt-2 cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
             onClick={resetToHome}
           >
             <img src="/LeekIconNoBG.png" alt="Time Leak Icon" className="w-full h-full object-cover rounded-2xl" />
@@ -284,7 +284,7 @@ const Index = () => {
         </div>
 
         {/* Footer */}
-        <div className="text-center mt-4 space-y-4">
+        <div className="text-center mt-16 space-y-4">
           <p className="text-xs text-gray-500">
             This tool promotes healthy digital habits.
           </p>
